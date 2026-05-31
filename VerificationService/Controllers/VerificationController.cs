@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using VerificationService.Data;
+using VerificationService.Models;
 using VerificationService.Services;
 
 namespace VerificationService.Controllers;
@@ -9,13 +11,16 @@ public class VerificationController : ControllerBase
 {
     private readonly VerificationCodeService _service;
     private readonly ServiceBusPublisher _publisher;
+    private readonly ApplicationDbContext _dbContext;
 
     public VerificationController(
         VerificationCodeService service,
-        ServiceBusPublisher publisher)
+        ServiceBusPublisher publisher,
+        ApplicationDbContext dbContext)
     {
         _service = service;
         _publisher = publisher;
+        _dbContext = dbContext;
     }
 
     [HttpPost("send")]
@@ -32,13 +37,34 @@ public class VerificationController : ControllerBase
     }
 
     [HttpPost("validate")]
-    public IActionResult Validate(string email, string code)
+    public async Task<IActionResult> Validate(string email, string code)
     {
+        var verification = _dbContext.VerificationCodes
+            .Where(v => v.Email == email)
+            .OrderByDescending(v => v.CreatedAt)
+            .FirstOrDefault();
+
+        if (verification == null)
+        {
+            return BadRequest("No code found for this email");
+        }
+
+        if (verification.Code != code)
+        {
+            return BadRequest("Wrong code");
+        }
+
+        if (verification.IsUsed)
+        {
+            return BadRequest("Code already used");
+        }
+
+        verification.IsUsed = true;
+        await _dbContext.SaveChangesAsync();
+
         return Ok(new
         {
-            email,
-            code,
-            valid = true
+            message = "Code is valid"
         });
     }
 }

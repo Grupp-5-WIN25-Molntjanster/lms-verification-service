@@ -12,8 +12,8 @@ using VerificationService.Data;
 namespace VerificationService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260528232206_NewMigrationName")]
-    partial class NewMigrationName
+    [Migration("20260531220632_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,11 +27,9 @@ namespace VerificationService.Migrations
 
             modelBuilder.Entity("VerificationService.Models.VerificationCode", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Code")
                         .IsRequired()
